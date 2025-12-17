@@ -3,8 +3,8 @@ import { Order, WorkshopBooking, UserProfile } from '../types';
 const KEYS = {
   ORDERS: 'basho_orders',
   BOOKINGS: 'basho_bookings',
-  USERS: 'basho_users',
-  CURRENT_USER: 'basho_current_user',
+  USERS: 'basho_users', // Persistent: Stores all registered users
+  SESSION_CURRENT_USER: 'basho_session_current_user', // Temporary: Stores the currently logged-in user for the session
 };
 
 // --- Helper for consistent email handling ---
@@ -15,20 +15,20 @@ const normalizeEmail = (email: string): string => {
 // --- Authentication ---
 
 export const registerUser = (name: string, email: string): boolean => {
-  const users = getAllUsers();
+  const users = getAllUsers(); // Gets all users from localStorage (persistent)
   const safeEmail = normalizeEmail(email);
   
   // Check if user exists to avoid duplicates
   const existingUserIndex = users.findIndex(u => normalizeEmail(u.email) === safeEmail);
   
   if (existingUserIndex === -1) {
-      // Create new user, implicitly verified
+      // Create new user
       const newUser: UserProfile = { 
         name: name.trim(), 
         email: safeEmail,
       };
       users.push(newUser);
-      localStorage.setItem(KEYS.USERS, JSON.stringify(users));
+      localStorage.setItem(KEYS.USERS, JSON.stringify(users)); // Save updated list to localStorage (persistent)
       console.log(`[Storage] Registered new user: ${safeEmail}`);
       return true;
   } else {
@@ -37,23 +37,21 @@ export const registerUser = (name: string, email: string): boolean => {
   }
 };
 
-// Removed: export const verifyUser = (email: string): void => { ... };
-
 export const checkUserExists = (email: string): boolean => {
-  const users = getAllUsers();
+  const users = getAllUsers(); // Reads from localStorage (persistent)
   const safeEmail = normalizeEmail(email);
   return users.some(u => normalizeEmail(u.email) === safeEmail);
 };
 
 export const loginUser = (email: string): boolean => {
-  const users = getAllUsers();
+  const users = getAllUsers(); // Gets all users from localStorage (persistent)
   const safeEmail = normalizeEmail(email);
   
   const user = users.find(u => normalizeEmail(u.email) === safeEmail);
   
   if (user) {
-    // User is considered logged in and verified immediately for hackathon demo
-    localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
+    // If user exists, store their profile in sessionStorage for the current session (temporary)
+    sessionStorage.setItem(KEYS.SESSION_CURRENT_USER, JSON.stringify(user)); 
     console.log(`[Storage] User logged in: ${safeEmail}`);
     return true;
   }
@@ -65,7 +63,8 @@ export const loginUser = (email: string): boolean => {
 
 export const getUserProfile = (): UserProfile | null => {
   try {
-    const data = localStorage.getItem(KEYS.CURRENT_USER);
+    // Read current user profile from sessionStorage (temporary session data)
+    const data = sessionStorage.getItem(KEYS.SESSION_CURRENT_USER);
     return data ? JSON.parse(data) : null;
   } catch {
     return null;
@@ -73,11 +72,14 @@ export const getUserProfile = (): UserProfile | null => {
 };
 
 export const logoutUser = (): void => {
-    localStorage.removeItem(KEYS.CURRENT_USER);
+    // Only clear the current user's session from sessionStorage
+    sessionStorage.removeItem(KEYS.SESSION_CURRENT_USER);
+    console.log('[Storage] User logged out (session cleared).');
 };
 
 const getAllUsers = (): UserProfile[] => {
     try {
+        // Always retrieve all registered users from localStorage
         const data = localStorage.getItem(KEYS.USERS);
         return data ? JSON.parse(data) : [];
     } catch {
@@ -87,7 +89,7 @@ const getAllUsers = (): UserProfile[] => {
 
 // --- Orders ---
 export const saveOrder = (order: Order) => {
-  const user = getUserProfile();
+  const user = getUserProfile(); // Gets current user from sessionStorage
   // Associate order with current user if logged in
   if (user && !order.userEmail) {
       order.userEmail = user.email; // Already normalized from profile
@@ -98,14 +100,14 @@ export const saveOrder = (order: Order) => {
 };
 
 export const getOrders = (): Order[] => {
-  const allOrders = getAllOrdersRaw();
-  const user = getUserProfile();
+  const allOrders = getAllOrdersRaw(); // All orders (persistent in localStorage)
+  const user = getUserProfile(); // Current user from sessionStorage
   
   if (user) {
-      // Filter strictly by normalized email
+      // Filter strictly by normalized email of the current session user
       return allOrders.filter(o => o.userEmail && normalizeEmail(o.userEmail) === normalizeEmail(user.email));
   }
-  return []; // If not logged in, show nothing (or all if that was the intent, but strictly for auth it should be own orders)
+  return []; // If not logged in, show no orders
 };
 
 const getAllOrdersRaw = (): Order[] => {
@@ -115,7 +117,7 @@ const getAllOrdersRaw = (): Order[] => {
 
 // --- Bookings ---
 export const saveBooking = (booking: WorkshopBooking) => {
-  const user = getUserProfile();
+  const user = getUserProfile(); // Gets current user from sessionStorage
   if (user && !booking.userEmail) {
       booking.userEmail = user.email;
   }
@@ -125,8 +127,8 @@ export const saveBooking = (booking: WorkshopBooking) => {
 };
 
 export const getBookings = (): WorkshopBooking[] => {
-  const allBookings = getAllBookingsRaw();
-  const user = getUserProfile();
+  const allBookings = getAllBookingsRaw(); // All bookings (persistent in localStorage)
+  const user = getUserProfile(); // Current user from sessionStorage
   
   if (user) {
       return allBookings.filter(b => b.userEmail && normalizeEmail(b.userEmail) === normalizeEmail(user.email));
@@ -141,7 +143,8 @@ const getAllBookingsRaw = (): WorkshopBooking[] => {
 
 // --- Stats Calculation ---
 export const getDashboardStats = () => {
-  const orders = getOrders();
+  // getOrders and getBookings already filter by the current session user
+  const orders = getOrders(); 
   const bookings = getBookings();
   
   const totalOrders = orders.length;
