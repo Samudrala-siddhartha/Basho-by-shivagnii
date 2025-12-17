@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { WORKSHOPS, FALLBACK_IMAGE } from '../constants';
 import { Calendar, Clock, Users, X, CheckCircle, Loader2, Video, Copy, ExternalLink, MapPin } from 'lucide-react';
 import { Workshop } from '../types';
-import { saveBooking, saveUserProfile } from '../services/storage';
+import { saveBooking } from '../services/storage';
 
 const Workshops: React.FC = () => {
   const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
@@ -94,7 +94,6 @@ const BookingModal: React.FC<{ workshop: Workshop, onClose: () => void }> = ({ w
             const id = `BKG-${Date.now().toString().slice(-4)}-${Math.floor(Math.random()*1000)}`;
             setBookingId(id);
             
-            saveUserProfile({ name: formData.name, email: formData.email });
             saveBooking({
                 id,
                 date: workshop.date,

@@ -1,33 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Package, Calendar, LogOut } from 'lucide-react';
-import { getUserProfile, getOrders, getBookings, getDashboardStats, logoutUser } from '../services/storage';
-import { UserProfile, Order, WorkshopBooking } from '../types';
+import { getOrders, getBookings, getDashboardStats, getUserProfile, logoutUser } from '../services/storage';
+import { Order, WorkshopBooking, UserProfile } from '../types';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [bookings, setBookings] = useState<WorkshopBooking[]>([]);
   const [stats, setStats] = useState({ totalOrders: 0, totalBookings: 0, totalSpent: 0 });
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // Load data from "backend" (localStorage)
-    const currentUser = getUserProfile();
-    // Safety check: ProtectedRoute handles redirect, but good for TS safety
-    if (!currentUser) {
-        navigate('/login');
-        return;
-    }
-    setUser(currentUser);
+    // Load data from localStorage
     setOrders(getOrders());
     setBookings(getBookings());
     setStats(getDashboardStats());
-  }, [navigate]);
+    setUser(getUserProfile());
+  }, []);
 
   const handleLogout = () => {
     logoutUser();
-    navigate('/');
+    navigate('/login');
   };
 
   return (
@@ -43,18 +37,11 @@ const Dashboard: React.FC = () => {
             <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" />
             <span className="uppercase tracking-widest text-xs font-medium">Back</span>
             </button>
-            
-            <button 
-                onClick={handleLogout}
-                className="flex items-center text-red-400 hover:text-red-600 transition-colors text-xs uppercase tracking-widest"
-            >
-                Sign Out <LogOut size={16} className="ml-2" />
-            </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          {/* Left Column: User Profile & Stats */}
+          {/* Left Column: Guest Profile & Stats */}
           <div className="space-y-6">
             {/* Profile Card */}
             <div className="bg-white p-6 border border-stone-200 shadow-sm rounded-sm">
@@ -64,18 +51,26 @@ const Dashboard: React.FC = () => {
                 </div>
                 <div>
                   <h2 className="font-serif text-xl text-stone-800">
-                    {user?.name || 'Artisan'}
+                    {user ? user.name : "Guest Artisan"}
                   </h2>
                   <p className="text-xs text-stone-400">
-                    {user?.email}
+                    {user ? user.email : "Browser Session"}
                   </p>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-stone-100">
-                  <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1">Status</p>
-                  <p className="text-sm text-terracotta font-medium flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span> Active Session
-                  </p>
+              <div className="mt-4 pt-4 border-t border-stone-100 flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-sm text-stone-500 font-medium flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${user ? 'bg-green-500' : 'bg-stone-400'}`}></span> 
+                      {user ? 'Member' : 'Local Session'} {/* Simplified status message */}
+                    </p>
+                  </div>
+                  {user && (
+                    <button onClick={handleLogout} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors">
+                      <LogOut size={12} /> Logout
+                    </button>
+                  )}
               </div>
             </div>
 

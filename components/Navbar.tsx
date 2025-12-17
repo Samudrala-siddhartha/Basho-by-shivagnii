@@ -1,26 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag, User, LogOut } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Menu, X, ShoppingBag, Package } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { getUserProfile, logoutUser } from '../services/storage';
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
   const { toggleCart, cartCount } = useCart();
-  const [user, setUser] = useState(getUserProfile());
-
-  // Re-check auth state on location change (in case of login/logout)
-  useEffect(() => {
-    setUser(getUserProfile());
-  }, [location]);
-
-  const handleLogout = () => {
-    logoutUser();
-    setUser(null);
-    navigate('/');
-  };
 
   const navLinks = [
     { name: 'Shop', path: '/shop' },
@@ -54,21 +40,9 @@ const Navbar: React.FC = () => {
             
             {/* Icons Group */}
             <div className="flex items-center space-x-6 border-l border-stone-300 pl-6 ml-4">
-                {user ? (
-                   <div className="flex items-center space-x-4">
-                       <Link to="/dashboard" className="text-stone-800 hover:text-terracotta transition-colors flex items-center gap-2" title="View Dashboard">
-                          <User size={20} />
-                          <span className="text-xs uppercase tracking-widest hidden lg:inline">{user.name.split(' ')[0]}</span>
-                       </Link>
-                       <button onClick={handleLogout} className="text-stone-400 hover:text-stone-800 transition-colors" title="Logout">
-                          <LogOut size={18} />
-                       </button>
-                   </div>
-                ) : (
-                    <Link to="/login" className="text-stone-800 hover:text-terracotta transition-colors text-xs uppercase tracking-widest font-medium" title="Login">
-                        Login
-                    </Link>
-                )}
+               <Link to="/dashboard" className="text-stone-600 hover:text-terracotta transition-colors flex items-center gap-2" title="Order History">
+                  <Package size={20} />
+               </Link>
                 
                 <button 
                   onClick={toggleCart}
@@ -87,15 +61,9 @@ const Navbar: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-4">
-             {user ? (
-                 <Link to="/dashboard" className="text-stone-800" title="View Dashboard">
-                    <User size={20} />
-                 </Link>
-             ) : (
-                <Link to="/login" className="text-stone-800 font-bold text-xs uppercase" title="Login">
-                    Login
-                </Link>
-             )}
+             <Link to="/dashboard" className="text-stone-800" title="Order History">
+                <Package size={20} />
+             </Link>
              
              <button onClick={toggleCart} className="text-stone-800 relative" title="View Cart">
               <ShoppingBag size={20} />
@@ -130,34 +98,13 @@ const Navbar: React.FC = () => {
                 {link.name}
               </Link>
             ))}
-             {user ? (
-                 <>
-                    <Link
-                        to="/dashboard"
-                        onClick={() => setIsOpen(false)}
-                        className="block px-3 py-4 text-center font-serif text-xl text-stone-700 hover:text-terracotta hover:bg-stone-100 border-t border-stone-200"
-                    >
-                        My Dashboard
-                    </Link>
-                    <button
-                        onClick={() => {
-                            handleLogout();
-                            setIsOpen(false);
-                        }}
-                        className="w-full block px-3 py-4 text-center font-serif text-xl text-stone-400 hover:text-stone-800 hover:bg-stone-100 border-t border-stone-200"
-                    >
-                        Sign Out
-                    </button>
-                 </>
-             ) : (
-                 <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="block px-3 py-4 text-center font-serif text-xl text-stone-700 hover:text-terracotta hover:bg-stone-100 border-t border-stone-200"
-                >
-                    Login / Register
-                </Link>
-             )}
+            <Link
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="block px-3 py-4 text-center font-serif text-xl text-stone-700 hover:text-terracotta hover:bg-stone-100 border-t border-stone-200"
+            >
+                Order History
+            </Link>
           </div>
         </div>
       )}

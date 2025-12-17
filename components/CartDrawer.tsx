@@ -14,19 +14,30 @@ const CartDrawer: React.FC = () => {
   const handleCheckout = () => {
     setIsCheckingOut(true);
     
-    // HACKATHON DEMO LOGIC:
+    // HACKATHON DEMO LOGIC: Simulate payment processing
     setTimeout(() => {
+      const newOrderId = `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
+      // 1. Save order to localStorage (our mock backend)
       saveOrder({
-          id: `ORD-${Date.now()}`,
+          id: newOrderId,
           date: new Date().toLocaleDateString(),
           items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
           total: cartTotal
       });
       
+      // 2. Store confirmation details in sessionStorage for the success page
+      sessionStorage.setItem('last_confirmed_order_details', JSON.stringify({
+          id: newOrderId,
+          date: new Date().toLocaleDateString(),
+          items: cart.map(i => ({ name: i.name, price: i.price, quantity: i.quantity })),
+          total: cartTotal,
+          confirmationType: 'cart_checkout',
+      }));
+
       setIsCheckingOut(false);
-      alert(`Payment Successful!\n\nAmount Paid: ₹${cartTotal}\n\nThank you for supporting Basho.`);
-      clearCart();
-      toggleCart();
+      toggleCart(); // Close the cart drawer
+      navigate('/order-success'); // Navigate to the order success page (cart will be cleared there)
     }, 2000);
   };
 

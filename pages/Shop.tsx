@@ -3,7 +3,8 @@ import { PRODUCTS, FALLBACK_IMAGE } from '../constants';
 import { Product } from '../types';
 import { useCart } from '../context/CartContext';
 import { ShoppingBag, CreditCard, X, Loader2, CheckCircle, ExternalLink, Image as ImageIcon } from 'lucide-react';
-import { saveOrder, saveUserProfile } from '../services/storage';
+import { saveOrder } from '../services/storage';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const Shop: React.FC = () => {
   const [filter, setFilter] = useState<string>('All');
@@ -142,14 +143,13 @@ const ProductCard: React.FC<{ product: Product, onBuyNow: () => void }> = ({ pro
 };
 
 const BuyNowModal: React.FC<{ product: Product, onClose: () => void }> = ({ product, onClose }) => {
-    const [step, setStep] = useState<'summary' | 'processing' | 'success'>('summary');
+    const [step, setStep] = useState<'summary' | 'processing'>('summary'); // Removed 'success' step
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         address: ''
     });
-    const [orderId, setOrderId] = useState('');
-    const [deliveryDate, setDeliveryDate] = useState('');
+    const navigate = useNavigate(); // Hook for navigation
 
     const handleConfirm = () => {
         if (!formData.email || !formData.address || !formData.name) {
@@ -165,12 +165,7 @@ const BuyNowModal: React.FC<{ product: Product, onClose: () => void }> = ({ prod
             estDate.setDate(estDate.getDate() + 7); // 7 days delivery
             const dateStr = estDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-            setOrderId(newOrderId);
-            setDeliveryDate(dateStr);
-
-            window.open('https://razorpay.com/demo-link', '_blank'); 
-            
-            saveUserProfile({ name: formData.name, email: formData.email });
+            // 1. Save order to localStorage (our mock backend)
             saveOrder({
                 id: newOrderId,
                 date: new Date().toLocaleDateString(),
@@ -178,39 +173,27 @@ const BuyNowModal: React.FC<{ product: Product, onClose: () => void }> = ({ prod
                 total: product.price
             });
 
-            setStep('success');
+            // 2. Store confirmation details in sessionStorage for the success page
+            sessionStorage.setItem('last_confirmed_order_details', JSON.stringify({
+                id: newOrderId,
+                date: new Date().toLocaleDateString(),
+                items: [{ name: product.name, price: product.price, quantity: 1 }],
+                total: product.price,
+                deliveryDate: dateStr,
+                confirmationType: 'buy_now', // Helps distinguish if needed
+            }));
+
+            // Simulate payment gateway redirection
+            window.open('https://razorpay.com/demo-link', '_blank'); 
+            
+            // 3. Navigate to the order success page (cart will be cleared there)
+            onClose(); // Close the modal
+            navigate('/order-success');
         }, 1500);
     };
 
-    if (step === 'success') {
-        return (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm" onClick={onClose} />
-                <div className="relative bg-white p-8 max-w-sm w-full text-center shadow-xl animate-fade-in rounded-sm">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <CheckCircle className="text-green-600" size={32} />
-                    </div>
-                    <h3 className="font-serif text-2xl text-stone-800 mb-2">Order Placed!</h3>
-                    <p className="text-stone-500 mb-6 text-sm">
-                        Payment confirmed. A confirmation email has been sent to <strong>{formData.email}</strong>.
-                    </p>
-                    <div className="bg-stone-50 p-4 mb-4 text-left border border-stone-100 space-y-3 rounded-sm">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] uppercase text-stone-400 tracking-wider">Order ID</span>
-                            <span className="font-mono text-stone-800 font-medium text-sm">{orderId}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                             <span className="text-[10px] uppercase text-stone-400 tracking-wider">Est. Delivery</span>
-                             <span className="text-stone-800 font-medium text-sm">{deliveryDate}</span>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="w-full bg-stone-900 text-white py-3 uppercase tracking-widest text-sm hover:bg-terracotta transition-colors">
-                        Close
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    // The success rendering logic is now moved to OrderSuccess.tsx
+    // The previous `if (step === 'success')` block is removed from here.
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">

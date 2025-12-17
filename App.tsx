@@ -12,6 +12,7 @@ import CustomOrder from './pages/CustomOrder';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import OrderSuccess from './pages/OrderSuccess'; // Import the new OrderSuccess page
 import ProtectedRoute from './components/ProtectedRoute';
 import { ShippingReturns, CareInstructions, PrivacyPolicy } from './pages/InfoPages';
 
@@ -38,20 +39,14 @@ function App() {
               <Route path="/shop" element={<Shop />} />
               <Route path="/workshops" element={<Workshops />} />
               <Route path="/custom" element={<CustomOrder />} />
-              
-              {/* Auth Routes */}
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              
-              {/* Protected Route */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
+              <Route path="/order-success" element={<OrderSuccess />} /> {/* New Route */}
               
               <Route path="/shipping-returns" element={<ShippingReturns />} />
               <Route path="/care-instructions" element={<CareInstructions />} />
